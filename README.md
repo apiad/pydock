@@ -35,7 +35,7 @@ In Linux one way to do this is with this convenience script:
 curl https://raw.githubusercontent.com/apiad/pydock/main/install/linux.sh | bash
 ```
 
-If you only want to use `pydock` inside a specific project, then you can just download the [pydock.py](https://raw.githubusercontent.com/apiad/pydock/main/pydock.py) file into your codebase and commit it to your repository.
+If you only want to use `pydock` inside a specific project, then you can just download the [pydock.py](https://raw.githubusercontent.com/apiad/pydock/main/src/pydock.py) file into your codebase and commit it to your repository.
 Then you can use it locally as (provided you gave it execution permisions):
 
 ```
