@@ -1,19 +1,19 @@
 #!/usr/bin/python3
 
 # MIT License
-# 
+#
 # Copyright (c) 2021 Alejandro Piad Morffis
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -152,7 +152,7 @@ def create(config: ConfigParser, name:str, version:str):
 <version>   A Python version (e.g., 3.8 or 3.8.7)
     """
     env_dir = envs_path / name
-    
+
     try:
         env_dir.mkdir()
     except FileExistsError:
@@ -213,12 +213,12 @@ def delete(config: ConfigParser, name:str):
     shutil.rmtree(env_dir)
 
     # TODO: Decide whether to delete the Docker image makes sense
-    # command = ["docker", "rmi", "--force", f"pydock-{name}:latest"]
+    command = ["docker", "rmi", "--force", f"pydock-{name}:latest"]
 
-    # if config.getboolean("docker", "sudo"):
-    #     command.insert(0, "sudo")
+    if config.getboolean("docker", "sudo"):
+        command.insert(0, "sudo")
 
-    # subprocess.run(command)
+    subprocess.run(command)
 
     print(f"🟢 Environment '{name}' succesfully deleted!")
 
@@ -265,7 +265,7 @@ def main():
 
     command = COMMANDS[args.pop(0)]
     command(config, *args)
-    
+
 
 if __name__ == "__main__":
     main()
