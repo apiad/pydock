@@ -92,6 +92,7 @@ At any moment, the `pydock-<name>` images that correspond to each environment sh
 
 ```bash
 pydock build <name>
+```
 
 This command is also useful if you want to move environments around.
 For example, by commiting your local `.pydock` folder into source control for a given project, other developers can easily run `pydock build ...` after checkout and the corresponding environment(s) will be created.
