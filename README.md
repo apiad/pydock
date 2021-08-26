@@ -46,12 +46,56 @@ pydock.py --local <command> [args...]
 
 Run `pydock` to see all available commands, and run `pydock <command>` to see a small help for that command.
 
+`pydock` can run in *global* or *local* mode, the difference being where it will store the environments configuration.
+In *global* mode, everything will be stored in `~/.pydock`, at the `/home` of the current user.
+In *local* mode, everything is stored inside a `.pydock` folder at the current working directory.
+The rules to decide whether to run in global or local mode are:
+
+* If you explicitely type `pydock --local` it will be local. Likewise, if you explicitely type `pydock --global` it will be global.
+* If no explicit flag is used, then if there is a `.pydock` folder already created in the current folder, we default to *local* mode.
+* Otherwise, it will *global* mode.
+
+In any moment, you can type `pydock config` and it will tell you whether it is running in local or global mode.
+
+### Creating an environment
+
+Run `pydock [--local/--global] create <name> <version>` to create a new environment with a given name and Python version. For example:
+
+```bash
+pydock create datascience 3.8
+```
+
+This command will do the following:
+
+* Create a new folder `<name>` inside `.pydock/envs` (wherever that folder is depends on the *local* vs *global* mode).
+* Create a `dockerfile` and `requirements.txt` files inside that folder.
+* Run `docker build` in that context, effectively creating a new image with your desired Python version.
+
+By default, that image will have a user named like the user who run `pydock create` (this can be customized via configuration).
+
+### Executing a shell in an environment
+
+After creating an environment, if you run `docker images` you'll see a `pydock-<name>:latest` image, which corresponds to your environment.
+You can easily start it with `pydock shell <name>`.
+
+This will execute a `docker run ... bash` command tailored to that environment with some additional tidbits.
+One is that your current working directory will be mounted inside the newly created container's `/home/<user>`, which will be the starting working directory.
+Thus, inside the container, whatever you do will be reflected back in your host filesystem, hopefully with the right permissions.
+
+### Rebuilding an environment
+
+At any moment, the `pydock-<name>` images that correspond to each environment should be up-to-date but, if you manually modify the `dockerfile` or `requirements.txt` (which you are absolutely free to do), you can run `pydock build <name>` to rebuild and tag the corresponding image.
+
+This command is also useful if you want to move environments around.
+For example, by commiting your local `.pydock` folder into source control for a given project, other developers can easily run `pydock build ...` after checkout and the corresponding environment(s) will be created.
+
 ## Roadmap
 
 ### Planned
 
 - Add a `docker-compose.yml` file to environments to handle port bindings, volumes, etc.
 - Add a command to install dependencies inside the environment and commit/rebuild the image.
+- Change `dockerfile` template such that `user` and `repository` are args, inserted during `build` instead of when generating the file.
 
 ### v0.0.1
 
