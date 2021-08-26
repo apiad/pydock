@@ -26,17 +26,20 @@ This means you completely control what goes into an environment, and will never 
 
 ## Instalation
 
-`pydock` is a single Python file with no dependencies outside the Python standard library (and [Docker](https://docs.docker.com/engine/install/))., so you can just download it, give it execution permision, and add it to your path. In Linux one way to do this is:
+`pydock` is a single Python file with no dependencies outside the Python standard library (and [Docker](https://docs.docker.com/engine/install/)). 
+So you can just download it, give it execution permision, and add it to your path. 
+In Linux one way to do this is:
 
 ```bash
 sudo curl https://raw.githubusercontent.com/apiad/pydock/main/pydock.py > /usr/bin/pydock
 sudo chmod +x /usr/bin/pydock
 ``` 
 
-If you only want to use `pydock` inside a specific project, then you can just download the [pydock.py](https://raw.githubusercontent.com/apiad/pydock/main/pydock.py) file into your codebase and add commit it to your repository. Then you can use it localy as:
+If you only want to use `pydock` inside a specific project, then you can just download the [pydock.py](https://raw.githubusercontent.com/apiad/pydock/main/pydock.py) file into your codebase and commit it to your repository. 
+Then you can use it locally as (provided you gave it execution permision):
 
 ```
-./pydock --local <command> [args...]
+pydock.py --local <command> [args...]
 ```
 
 ## Usage
