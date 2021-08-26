@@ -76,7 +76,11 @@ By default, that image will have a user named like the user who run `pydock crea
 ### Executing a shell in an environment
 
 After creating an environment, if you run `docker images` you'll see a `pydock-<name>:latest` image, which corresponds to your environment.
-You can easily start it with `pydock shell <name>`.
+You can easily start it with:
+
+```bash
+pydock shell <name>
+```
 
 This will execute a `docker run ... bash` command tailored to that environment with some additional tidbits.
 One is that your current working directory will be mounted inside the newly created container's `/home/<user>`, which will be the starting working directory.
@@ -84,7 +88,10 @@ Thus, inside the container, whatever you do will be reflected back in your host 
 
 ### Rebuilding an environment
 
-At any moment, the `pydock-<name>` images that correspond to each environment should be up-to-date but, if you manually modify the `dockerfile` or `requirements.txt` (which you are absolutely free to do), you can run `pydock build <name>` to rebuild and tag the corresponding image.
+At any moment, the `pydock-<name>` images that correspond to each environment should be up-to-date but, if you manually modify the `dockerfile` or `requirements.txt` (which you are absolutely free to do), you can run this command to rebuild and tag the corresponding image.
+
+```bash
+pydock build <name>
 
 This command is also useful if you want to move environments around.
 For example, by commiting your local `.pydock` folder into source control for a given project, other developers can easily run `pydock build ...` after checkout and the corresponding environment(s) will be created.
