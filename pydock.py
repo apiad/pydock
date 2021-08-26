@@ -35,7 +35,7 @@ from pathlib import Path
 from typing import Callable
 
 
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 
 
 args = sys.argv[1:]
@@ -270,6 +270,60 @@ The current working directory is mounted inside the environment.
     subprocess.run(command)
 
     print(f"🏁 Shell instance for '{name}' ended.")
+
+
+@command
+def install(config: ConfigParser, env:str, package:str):
+    """Install a package in an environment and update requirements
+
+<env>       The environment where to install.
+<package>   A package name in pip format (e.g., can have a pinned version)
+
+After installation, the image for the environment will be updated,
+and the installed packages will be commited to the requirements, using `pip freeze`.
+    """
+    env_dir = envs_path / env
+    requirements = env_dir / "requirements.txt"
+    username = config.get("environment", "username")
+
+    if not env_dir.exists():
+        print(f"🔴 Environment '{env}' doesn't exist!")
+        return
+
+    print(f"💾 Installing {package} in environment '{env}'")
+
+    # Run pip install and freeze requirements
+    command = ["docker", "run", "--name", f"pydock-{env}-tmp", "-v", f"{requirements.resolve()}:/home/{username}/requirements.txt", "--user", str(os.geteuid()), f"pydock-{env}", "bash", "-c", f"pip install {package} && pip freeze > ~/requirements.txt"]
+
+    if config.getboolean("docker", "sudo"):
+        command.insert(0, "sudo")
+
+    subprocess.run(command)
+
+    print(f"🎁 Updating image for environment '{env}'")
+
+    # Commit the container and update the image in-place
+    command = ["docker", "commit", f"pydock-{env}-tmp"]
+
+    if config.getboolean("docker", "sudo"):
+        command.insert(0, "sudo")
+
+    new_image_id = subprocess.run(command, stdout=subprocess.PIPE).stdout.decode("utf8").strip().split(":")[1]
+
+    command = ["docker", "tag", new_image_id, f"pydock-{env}"]
+
+    if config.getboolean("docker", "sudo"):
+        command.insert(0, "sudo")
+
+    subprocess.run(command)
+
+    # Remove the dangling container
+    command = ["docker", "rm", f"pydock-{env}-tmp"]
+
+    if config.getboolean("docker", "sudo"):
+        command.insert(0, "sudo")
+
+    subprocess.run(command, stdout=subprocess.PIPE)
 
 
 def main():

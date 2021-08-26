@@ -67,7 +67,7 @@ pydock create datascience 3.8
 
 This command will do the following:
 
-* Create a new folder `<name>` inside `.pydock/envs` (wherever that folder is depends on the *local* vs *global* mode).
+* Create a new folder `datascience` inside `.pydock/envs` (wherever that folder is depends on the *local* vs *global* mode).
 * Create a `dockerfile` and `requirements.txt` files inside that folder.
 * Run `docker build` in that context, effectively creating a new image with your desired Python version.
 
@@ -76,15 +76,28 @@ By default, that image will have a user named like the user who run `pydock crea
 ### Executing a shell in an environment
 
 After creating an environment, if you run `docker images` you'll see a `pydock-<name>:latest` image, which corresponds to your environment.
-You can easily start it with:
+You can easily start it with (continuing with the previous example):
 
 ```bash
-pydock shell <name>
+pydock shell datascience
 ```
 
-This will execute a `docker run ... bash` command tailored to that environment with some additional tidbits.
+This will execute a `docker run ... datascience bash` command tailored to that environment with some additional tidbits.
 One is that your current working directory will be mounted inside the newly created container's `/home/<user>`, which will be the starting working directory.
 Thus, inside the container, whatever you do will be reflected back in your host filesystem, hopefully with the right permissions.
+
+### Installing dependencies in an environment
+
+In any existing environment `pydock` can help you install new dependencies while keeping updated the Docker image and tracking all packages.
+For example:
+
+```
+pydock install datascience pandas
+```
+
+This will launch a fresh container in the `datascience` environment and install `pandas`.
+`pydock` will commit the container and re-tag the new image such that it replaces the existing one for this environment, effectively saving the changes you did to the environment.
+Additionally, the `requirements.txt` will be updated with the contents of `pip freeze`, such that next time you call `build` you'll have the same environment.
 
 ### Rebuilding an environment
 
@@ -102,8 +115,12 @@ For example, by commiting your local `.pydock` folder into source control for a 
 ### Planned
 
 - Add a `docker-compose.yml` file to environments to handle port bindings, volumes, etc.
-- Add a command to install dependencies inside the environment and commit/rebuild the image.
 - Change `dockerfile` template such that `user` and `repository` are args, inserted during `build` instead of when generating the file.
+- Automatically delete untagged images when installing new dependencies.
+
+### v0.0.2
+
+- Add a command to install dependencies inside the environment and commit/rebuild the image.
 
 ### v0.0.1
 
