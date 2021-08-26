@@ -23,6 +23,7 @@
 # SOFTWARE.
 
 
+from re import L
 import sys
 import os
 import shutil
@@ -90,7 +91,7 @@ class Command:
 
     def __call__(self, config, *args):
         if len(args) != len(self.args):
-            print(f"Usage: pydock {self.name} {self.args_help}")
+            print(f"ℹ️  Usage: pydock {self.name} {self.args_help}")
             print("")
             print(self.doc)
             return
@@ -110,8 +111,22 @@ def command(func):
 def envs(config: ConfigParser):
     """List all existing environments
     """
-    for fname in envs_path.iterdir():
-        print(fname.stem)
+    docker_images_cmd = ["docker", "images"]
+
+    if config.get("docker", "sudo"):
+        docker_images_cmd.insert(0, "sudo")
+
+    docker_images = [line.split() for line in subprocess.run(docker_images_cmd, stdout=subprocess.PIPE).stdout.decode('utf8').split("\n")[1:]]
+    docker_images = { line[0]: line[1:] for line in docker_images if line }
+    env_names = list(envs_path.iterdir())
+
+    print(f"ENVIRONMENT     VERSION     IMAGE HASH    CREATED         SIZE")
+
+    for fname in env_names:
+        env_name = fname.stem
+        version, hash, *time, size  = docker_images[f"pydock-{env_name}"]
+
+        print(f"{env_name:16}{version:12}{hash:14}{' '.join(time):16}{size}")
 
 
 @command
@@ -194,8 +209,14 @@ The call to `create` automatically calls `build`.
     if config.getboolean("docker", "sudo"):
         command.insert(0, "sudo")
 
-    subprocess.run(command)
-    print(f"🟢 Environment '{name}' created successfully!")
+    try:
+        result = subprocess.run(command)
+        assert result.returncode == 0
+        print(f"🟢 Environment '{name}' created successfully!")
+    except:
+        print(f"🔴 Environment '{name}' failed!")
+        delete(config, name)
+
 
 
 @command
@@ -220,7 +241,7 @@ def delete(config: ConfigParser, name:str):
 
     subprocess.run(command)
 
-    print(f"🟢 Environment '{name}' succesfully deleted!")
+    print(f"💣 Environment '{name}' succesfully deleted.")
 
 
 @command
@@ -256,7 +277,7 @@ def main():
     config: ConfigParser = init()
 
     if not args:
-        print("Usage: pydock [--local/--global] <command> [args...]")
+        print("ℹ️  Usage: pydock [--local/--global] <command> [args...]")
         print("")
         for command in COMMANDS.values():
             print(command)
