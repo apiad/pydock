@@ -110,6 +110,8 @@ pydock build <name>
 This command is also useful if you want to move environments around.
 For example, by commiting your local `.pydock` folder into source control for a given project, other developers can easily run `pydock build ...` after checkout and the corresponding environment(s) will be created.
 
+If you run `build` manually, `pydock` will not delete the old image for that container, which will appear labelled `<none>`. Make sure to either delete it manually with `docker rmi` or run `docker system prune` periodically to remove any accumulated waste.
+
 ## Roadmap
 
 ### Planned
