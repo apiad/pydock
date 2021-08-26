@@ -149,8 +149,7 @@ FROM {repository}python:{version}
 
 RUN apt update && apt install sudo
 
-RUN adduser --gecos '' --disabled-password {user} && \
-  echo "{user} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/nopasswd
+RUN adduser --gecos '' --disabled-password {user} && echo "{user} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/nopasswd
 
 COPY requirements.txt /src/requirements.txt
 USER {user}
