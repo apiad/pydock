@@ -14,28 +14,28 @@ With `pydock` you can create "virtual" environments, which are actually Docker i
 Every environment you create has associated `dockerfile` and `requirements.txt` files which provide a completely platform-independent description of that environment.
 Thus, if at any point you want to migrate those environments to another computer, you just need to copy these files, and run `pydock build` there.
 
-## Design 
+## Design
 
 `pydock`'s mantra is zero-dependencies and absolute freedom.
 This means it will never create an environment that requires you to install anything to use, not even `pydock` (outside of Docker, that is, but everyone is already using Docker, right?)
 In particular, these are some principles we abide to:
 
-- **Use of open standards for decribing environments:** Right now the definition of an environment is just a `dockerfile` and a `requirement.txt`. 
-There is not and will never be any pydock-specific file there. 
+- **Use of open standards for decribing environments:** Right now the definition of an environment is just a `dockerfile` and a `requirement.txt`.
+There is not and will never be any pydock-specific file there.
 This means you completely control what goes into an environment, and will never be locked into using `pydock` for runing or modifying an environment.
 
 ## Instalation
 
-`pydock` is a single Python file with no dependencies outside the Python standard library (and [Docker](https://docs.docker.com/engine/install/)). 
-So you can just download it, give it execution permision, and add it to your path. 
+`pydock` is a single Python file with no dependencies outside the Python standard library (and [Docker](https://docs.docker.com/engine/install/)).
+So you can just download it, give it execution permision, and add it to your path.
 In Linux one way to do this is:
 
 ```bash
 sudo curl https://raw.githubusercontent.com/apiad/pydock/main/pydock.py > /usr/bin/pydock
 sudo chmod +x /usr/bin/pydock
-``` 
+```
 
-If you only want to use `pydock` inside a specific project, then you can just download the [pydock.py](https://raw.githubusercontent.com/apiad/pydock/main/pydock.py) file into your codebase and commit it to your repository. 
+If you only want to use `pydock` inside a specific project, then you can just download the [pydock.py](https://raw.githubusercontent.com/apiad/pydock/main/pydock.py) file into your codebase and commit it to your repository.
 Then you can use it locally as (provided you gave it execution permision):
 
 ```
@@ -45,6 +45,18 @@ pydock.py --local <command> [args...]
 ## Usage
 
 Run `pydock` to see all available commands, and run `pydock <command>` to see a small help for that command.
+
+## Roadmap
+
+### Planned
+
+- Add a `docker-compose.yml` file to environments to handle port bindings, volumes, etc.
+- Add a command to install dependencies inside the environment and commit/rebuild the image.
+
+### v0.0.1
+
+- Basic layout
+- Commands to create, list, and run a shell inside of environments.
 
 ## License and Contribution
 
