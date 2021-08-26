@@ -24,10 +24,10 @@ In particular, these are some principles we abide to:
 There is not and will never be any pydock-specific file there.
 This means you completely control what goes into an environment, and will never be locked into using `pydock` for runing or modifying an environment.
 
-## Instalation
+## Installation (sort of...)
 
-`pydock` is a single Python file with no dependencies outside the Python standard library (and [Docker](https://docs.docker.com/engine/install/)).
-So you can just download it, give it execution permision, and add it to your path.
+`pydock` is a single Python file with no dependencies outside the Python standard library and [Docker](https://docs.docker.com/engine/install/).
+So you can just download it, give it execution permisions, and add it to your path.
 In Linux one way to do this is:
 
 ```bash
@@ -36,10 +36,10 @@ sudo chmod +x /usr/bin/pydock
 ```
 
 If you only want to use `pydock` inside a specific project, then you can just download the [pydock.py](https://raw.githubusercontent.com/apiad/pydock/main/pydock.py) file into your codebase and commit it to your repository.
-Then you can use it locally as (provided you gave it execution permision):
+Then you can use it locally as (provided you gave it execution permisions):
 
 ```
-pydock.py --local <command> [args...]
+./pydock.py --local <command> [args...]
 ```
 
 ## Usage
@@ -52,8 +52,8 @@ In *local* mode, everything is stored inside a `.pydock` folder at the current w
 The rules to decide whether to run in global or local mode are:
 
 * If you explicitely type `pydock --local` it will be local. Likewise, if you explicitely type `pydock --global` it will be global.
-* If no explicit flag is used, then if there is a `.pydock` folder already created in the current folder, we default to *local* mode.
-* Otherwise, it will *global* mode.
+* If no explicit flag is used, then if there is a `.pydock` folder already created in the current folder (i.e., you ran `pydock --local` sometime before), it will default to *local* mode.
+* Otherwise, it will run in *global* mode.
 
 In any moment, you can type `pydock config` and it will tell you whether it is running in local or global mode.
 
