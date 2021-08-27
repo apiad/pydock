@@ -24,6 +24,8 @@ In particular, these are some principles we abide to:
 There is not and will never be any pydock-specific file there.
 This means you completely control what goes into an environment, and will never be locked into using `pydock` for runing or modifying an environment.
 
+- **Depend only on the standard library:** Since `pydock` is supposed to remove your need to install things in your system's Python, it cannot depend on anything that is not bundled in the standard Python distribution that comes with most operating systems (we're talking *real* operating systems here 😛).
+
 ## Installation (sort of...)
 
 `pydock` is a single Python file with no dependencies outside the Python standard library and [Docker](https://docs.docker.com/engine/install/).
