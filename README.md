@@ -94,7 +94,7 @@ This will execute a `docker run ... datascience bash` command tailored to that e
 One is that your current working directory will be mounted inside the newly created container's `/home/<user>`, which will be the starting working directory.
 Thus, inside the container, whatever you do will be reflected back in your host filesystem, hopefully with the right permissions.
 
-### Installing dependencies in an environment
+### Managing dependencies in an environment
 
 In any existing environment `pydock` can help you install new dependencies while keeping updated the Docker image and tracking all packages.
 For example:
@@ -106,6 +106,8 @@ pydock install datascience pandas
 This will launch a fresh container in the `datascience` environment and install `pandas`.
 `pydock` will commit the container and re-tag the new image such that it replaces the existing one for this environment, effectively saving the changes you did to the environment.
 Additionally, the `requirements.txt` will be updated with the contents of `pip freeze`, such that next time you call `build` you'll have the same environment.
+
+Likewise, you can use `pydock update` and `pydock uninstall` to update / uninstall dependencies in an environment, with the same syntax and it will do what you expect.
 
 ### Rebuilding an environment
 
@@ -126,8 +128,12 @@ If you run `build` manually, `pydock` will not delete the old image for that con
 
 - Add a `docker-compose.yml` file to environments to handle port bindings, volumes, etc.
 - Change `dockerfile` template such that `user` and `repository` are args, inserted during `build` instead of when generating the file.
-- Automatically delete untagged images when installing new dependencies.
-- Add commands to remove and update dependencies.
+
+# v0.0.4
+
+- Automatically deletes untagged images when managing dependencies.
+- Added commands to remove and update dependencies.
+- Added a bunch of exception handling when Docker commands fail
 
 ### v0.0.3
 
