@@ -309,7 +309,16 @@ and the installed packages will be commited to the requirements, using `pip free
 
     new_image_id = subprocess.run(command, stdout=subprocess.PIPE).stdout.decode("utf8").strip().split(":")[1]
 
-    command = ["docker", "tag", new_image_id, f"pydock-{env}"]
+    # Delete the old image
+    command = ["docker", "rmi", "--force", f"pydock-{env}:latest"]
+
+    if config.getboolean("docker", "sudo"):
+        command.insert(0, "sudo")
+
+    subprocess.run(command, stdout=subprocess.PIPE)
+
+    # Tag the new image
+    command = ["docker", "tag", new_image_id, f"pydock-{env}:latest"]
 
     if config.getboolean("docker", "sudo"):
         command.insert(0, "sudo")
