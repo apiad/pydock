@@ -133,7 +133,7 @@ If you run `build` manually, `pydock` will not delete the old image for that con
 
 - Automatically deletes untagged images when managing dependencies.
 - Added commands to remove and update dependencies.
-- Added a bunch of exception handling when Docker commands fail
+- Added a bunch of exception handling when Docker commands fail.
 
 ### v0.0.3
 
