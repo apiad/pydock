@@ -34,7 +34,7 @@ from pathlib import Path
 from typing import Callable
 
 
-__version__ = "0.0.2"
+__version__ = "0.0.3"
 
 
 args = sys.argv[1:]
