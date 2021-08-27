@@ -120,7 +120,7 @@ def envs(config: ConfigParser):
     docker_images = { line[0]: line[1:] for line in docker_images if line }
     env_names = list(envs_path.iterdir())
 
-    print(f"ENVIRONMENT     VERSION     IMAGE HASH    CREATED         SIZE")
+    print(f"ENVIRONMENT     VERSION     IMAGE HASH    UPDATED         SIZE")
 
     for fname in env_names:
         env_name = fname.stem
