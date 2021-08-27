@@ -223,7 +223,7 @@ def delete(config: ConfigParser, name:str):
     shutil.rmtree(env_dir)
 
     # TODO: Decide whether to delete the Docker image makes sense
-    docker(["rmi", "--force", f"pydock-{name}:latest"], config)
+    docker(["rmi", "--force", f"pydock-{name}:latest"], config, throw=False)
 
     print(f"💣 Environment '{name}' succesfully deleted.")
 
@@ -272,22 +272,104 @@ and the installed packages will be commited to the requirements, using `pip free
 
     print(f"💾 Installing {package} in environment '{env}'")
 
+    try:
+        # Run pip install and freeze requirements
+        docker(["run", "--name", f"pydock-{env}-tmp", "-v", f"{requirements.resolve()}:/home/{username}/requirements.txt", "--user", str(os.geteuid()), f"pydock-{env}", "bash", "-c", f"pip install {package} && pip freeze > ~/requirements.txt"], config)
+
+        print(f"🎁 Updating image for environment '{env}'")
+
+        # Commit the container and update the image in-place
+        new_image_id = docker(["commit", f"pydock-{env}-tmp"], config, stdout=subprocess.PIPE).stdout.decode("utf8").strip().split(":")[1]
+        # Delete the old image
+        docker(["rmi", "--force", f"pydock-{env}:latest"], config, stdout=subprocess.PIPE)
+        # Tag the new image
+        docker(["tag", new_image_id, f"pydock-{env}:latest"], config)
+    except:
+        print(f"🔴 Install command failed!")
+    finally:
+        # Remove the dangling container
+        docker(["rm", "--force", f"pydock-{env}-tmp"], config, throw=False, stdout=subprocess.PIPE)
+
+
+@command
+def update(config: ConfigParser, env:str, package:str):
+    """Update a package in an environment and update requirements
+
+<env>       The environment where to update.
+<package>   A package name to update
+
+After installation, the image for the environment will be updated,
+and the installed packages will be commited to the requirements, using `pip freeze`.
+    """
+    env_dir = envs_path / env
+    requirements = env_dir / "requirements.txt"
+    username = config.get("environment", "username")
+
+    if not env_dir.exists():
+        print(f"🔴 Environment '{env}' doesn't exist!")
+        return
+
+    print(f"💾 Updating {package} in environment '{env}'")
+
     # Run pip install and freeze requirements
-    docker(["run", "--name", f"pydock-{env}-tmp", "-v", f"{requirements.resolve()}:/home/{username}/requirements.txt", "--user", str(os.geteuid()), f"pydock-{env}", "bash", "-c", f"pip install {package} && pip freeze > ~/requirements.txt"], config)
+    try:
+        docker(["run", "--name", f"pydock-{env}-tmp", "-v", f"{requirements.resolve()}:/home/{username}/requirements.txt", "--user", str(os.geteuid()), f"pydock-{env}", "bash", "-c", f"pip install -U {package} && pip freeze > ~/requirements.txt"], config)
 
-    print(f"🎁 Updating image for environment '{env}'")
+        print(f"🎁 Updating image for environment '{env}'")
 
-    # Commit the container and update the image in-place
-    new_image_id = docker(["commit", f"pydock-{env}-tmp"], config, stdout=subprocess.PIPE).stdout.decode("utf8").strip().split(":")[1]
-    # Delete the old image
-    docker(["rmi", "--force", f"pydock-{env}:latest"], config, stdout=subprocess.PIPE)
-    # Tag the new image
-    docker(["tag", new_image_id, f"pydock-{env}:latest"], config)
-    # Remove the dangling container
-    docker(["rm", f"pydock-{env}-tmp"], config, stdout=subprocess.PIPE)
+        # Commit the container and update the image in-place
+        new_image_id = docker(["commit", f"pydock-{env}-tmp"], config, stdout=subprocess.PIPE).stdout.decode("utf8").strip().split(":")[1]
+        # Delete the old image
+        docker(["rmi", "--force", f"pydock-{env}:latest"], config, stdout=subprocess.PIPE)
+        # Tag the new image
+        docker(["tag", new_image_id, f"pydock-{env}:latest"], config)
+    except:
+        print(f"🔴 Update command failed!")
+    finally:
+        # Remove the dangling container
+        docker(["rm", "--force", f"pydock-{env}-tmp"], config, throw=False, stdout=subprocess.PIPE)
 
 
-def docker(command, config, **kwargs):
+@command
+def uninstall(config: ConfigParser, env:str, package:str):
+    """Uninstall a package in an environment and update requirements
+
+<env>       The environment where to update.
+<package>   A package name to uninstall
+
+After installation, the image for the environment will be updated,
+and the installed packages will be commited to the requirements, using `pip freeze`.
+    """
+    env_dir = envs_path / env
+    requirements = env_dir / "requirements.txt"
+    username = config.get("environment", "username")
+
+    if not env_dir.exists():
+        print(f"🔴 Environment '{env}' doesn't exist!")
+        return
+
+    print(f"💾 Uninstalling {package} in environment '{env}'")
+
+    try:
+        # Run pip install and freeze requirements
+        docker(["run", "--name", f"pydock-{env}-tmp", "-v", f"{requirements.resolve()}:/home/{username}/requirements.txt", "--user", str(os.geteuid()), f"pydock-{env}", "bash", "-c", f"pip uninstall -y {package} && pip freeze > ~/requirements.txt"], config)
+
+        print(f"🎁 Updating image for environment '{env}'")
+
+        # Commit the container and update the image in-place
+        new_image_id = docker(["commit", f"pydock-{env}-tmp"], config, stdout=subprocess.PIPE).stdout.decode("utf8").strip().split(":")[1]
+        # Delete the old image
+        docker(["rmi", "--force", f"pydock-{env}:latest"], config, stdout=subprocess.PIPE)
+        # Tag the new image
+        docker(["tag", new_image_id, f"pydock-{env}:latest"], config)
+    except:
+        print(f"🔴 Delete command failed!")
+    finally:
+        # Remove the dangling container
+        docker(["rm", "--force", f"pydock-{env}-tmp"], config, throw=False, stdout=subprocess.PIPE)
+
+
+def docker(command, config, throw=True, **kwargs):
     command.insert(0, "docker")
 
     if config.getboolean("docker", "sudo"):
@@ -295,7 +377,7 @@ def docker(command, config, **kwargs):
 
     result = subprocess.run(command, **kwargs)
 
-    if not result.returncode == 0:
+    if throw and result.returncode != 0:
         raise Exception("Error return code in subprocess")
 
     return result
