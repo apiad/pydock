@@ -23,7 +23,6 @@
 # SOFTWARE.
 
 
-from re import L
 import sys
 import os
 import shutil
