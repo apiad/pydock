@@ -110,12 +110,8 @@ def command(func):
 def envs(config: ConfigParser):
     """List all existing environments
     """
-    docker_images_cmd = ["docker", "images"]
-
-    if config.get("docker", "sudo"):
-        docker_images_cmd.insert(0, "sudo")
-
-    docker_images = [line.split() for line in subprocess.run(docker_images_cmd, stdout=subprocess.PIPE).stdout.decode('utf8').split("\n")[1:]]
+    docker_images_result = docker(["images"], config, stdout=subprocess.PIPE)
+    docker_images = [line.split() for line in docker_images_result.stdout.decode('utf8').split("\n")[1:]]
     docker_images = { line[0]: line[1:] for line in docker_images if line }
     env_names = list(envs_path.iterdir())
 
@@ -202,14 +198,9 @@ The call to `create` automatically calls `build`.
         return
 
     print(f"⏳ Building image for environment '{name}'")
-    command = ["docker", "build", "-t", f"pydock-{name}:latest", "-f", str(dockerfile), str(env_dir)]
-
-    if config.getboolean("docker", "sudo"):
-        command.insert(0, "sudo")
 
     try:
-        result = subprocess.run(command)
-        assert result.returncode == 0
+        docker(["build", "-t", f"pydock-{name}:latest", "-f", str(dockerfile), str(env_dir)], config)
         print(f"🟢 Environment '{name}' created successfully!")
     except:
         print(f"🔴 Environment '{name}' failed!")
@@ -232,12 +223,7 @@ def delete(config: ConfigParser, name:str):
     shutil.rmtree(env_dir)
 
     # TODO: Decide whether to delete the Docker image makes sense
-    command = ["docker", "rmi", "--force", f"pydock-{name}:latest"]
-
-    if config.getboolean("docker", "sudo"):
-        command.insert(0, "sudo")
-
-    subprocess.run(command)
+    docker(["rmi", "--force", f"pydock-{name}:latest"], config)
 
     print(f"💣 Environment '{name}' succesfully deleted.")
 
@@ -261,12 +247,7 @@ The current working directory is mounted inside the environment.
     username = config.get("environment", "username")
     cwd = Path.cwd().resolve()
 
-    command = ["docker", "run", "--rm", "-it", "--user", str(os.geteuid()), "--hostname", name, "-v", f"{cwd}:/home/{username}/{cwd.stem}", "-w", f"/home/{username}/{cwd.stem}", f"pydock-{name}:latest", "bash"]
-
-    if config.getboolean("docker", "sudo"):
-        command.insert(0, "sudo")
-
-    subprocess.run(command)
+    docker(["run", "--rm", "-it", "--user", str(os.geteuid()), "--hostname", name, "-v", f"{cwd}:/home/{username}/{cwd.stem}", "-w", f"/home/{username}/{cwd.stem}", f"pydock-{name}:latest", "bash"], config)
 
     print(f"🏁 Shell instance for '{name}' ended.")
 
@@ -292,46 +273,32 @@ and the installed packages will be commited to the requirements, using `pip free
     print(f"💾 Installing {package} in environment '{env}'")
 
     # Run pip install and freeze requirements
-    command = ["docker", "run", "--name", f"pydock-{env}-tmp", "-v", f"{requirements.resolve()}:/home/{username}/requirements.txt", "--user", str(os.geteuid()), f"pydock-{env}", "bash", "-c", f"pip install {package} && pip freeze > ~/requirements.txt"]
-
-    if config.getboolean("docker", "sudo"):
-        command.insert(0, "sudo")
-
-    subprocess.run(command)
+    docker(["run", "--name", f"pydock-{env}-tmp", "-v", f"{requirements.resolve()}:/home/{username}/requirements.txt", "--user", str(os.geteuid()), f"pydock-{env}", "bash", "-c", f"pip install {package} && pip freeze > ~/requirements.txt"], config)
 
     print(f"🎁 Updating image for environment '{env}'")
 
     # Commit the container and update the image in-place
-    command = ["docker", "commit", f"pydock-{env}-tmp"]
-
-    if config.getboolean("docker", "sudo"):
-        command.insert(0, "sudo")
-
-    new_image_id = subprocess.run(command, stdout=subprocess.PIPE).stdout.decode("utf8").strip().split(":")[1]
-
+    new_image_id = docker(["commit", f"pydock-{env}-tmp"], config, stdout=subprocess.PIPE).stdout.decode("utf8").strip().split(":")[1]
     # Delete the old image
-    command = ["docker", "rmi", "--force", f"pydock-{env}:latest"]
-
-    if config.getboolean("docker", "sudo"):
-        command.insert(0, "sudo")
-
-    subprocess.run(command, stdout=subprocess.PIPE)
-
+    docker(["rmi", "--force", f"pydock-{env}:latest"], config, stdout=subprocess.PIPE)
     # Tag the new image
-    command = ["docker", "tag", new_image_id, f"pydock-{env}:latest"]
-
-    if config.getboolean("docker", "sudo"):
-        command.insert(0, "sudo")
-
-    subprocess.run(command)
-
+    docker(["tag", new_image_id, f"pydock-{env}:latest"], config)
     # Remove the dangling container
-    command = ["docker", "rm", f"pydock-{env}-tmp"]
+    docker(["rm", f"pydock-{env}-tmp"], config, stdout=subprocess.PIPE)
+
+
+def docker(command, config, **kwargs):
+    command.insert(0, "docker")
 
     if config.getboolean("docker", "sudo"):
         command.insert(0, "sudo")
 
-    subprocess.run(command, stdout=subprocess.PIPE)
+    result = subprocess.run(command, **kwargs)
+
+    if not result.returncode == 0:
+        raise Exception("Error return code in subprocess")
+
+    return result
 
 
 def main():
