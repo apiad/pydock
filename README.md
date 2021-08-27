@@ -1,5 +1,7 @@
 # pydock - Docker-based environment manager for Python
 
+![GitHub](https://img.shields.io/github/license/apiad/pydock) ![GitHub tag (latest SemVer pre-release)](https://img.shields.io/github/v/tag/apiad/pydock?include_prereleases&label=version) ![GitHub Repo stars](https://img.shields.io/github/stars/apiad/pydock?style=social) ![GitHub forks](https://img.shields.io/github/forks/apiad/pydock?style=social) ![GitHub watchers](https://img.shields.io/github/watchers/apiad/pydock?style=social)
+
 > ⚠️ `pydock` is still in beta mode, and very unstable. It is not recommended for anything serious.
 
 `pydock` is a poor man's Python environment manager fully based on Docker.
