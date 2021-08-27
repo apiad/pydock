@@ -55,7 +55,13 @@ The rules to decide whether to run in global or local mode are:
 * If no explicit flag is used, then if there is a `.pydock` folder already created in the current folder (i.e., you ran `pydock --local` sometime before), it will default to *local* mode.
 * Otherwise, it will run in *global* mode.
 
-In any moment, you can type `pydock config` and it will tell you whether it is running in local or global mode.
+We recommend global mode when you're creating an environment for interactive coding, e.g., for notebooks, one-off scripts, etc.
+They are stored in your home folder and can be accessed from anywhere.
+
+Use local mode when you're creating one or more environments for a specific project.
+Store them with the project source code and probably even commit them to version control, so that all developers share the same environments.
+
+> In any moment, you can type `pydock config` and it will tell you whether it is running in local or global mode.
 
 ### Creating an environment
 
