@@ -34,7 +34,7 @@ So you can just download it, give it execution permisions, and add it to your pa
 In Linux one way to do this is with this convenience script:
 
 ```bash
-curl https://raw.githubusercontent.com/apiad/pydock/main/install/linux.sh | bash
+curl https://raw.githubusercontent.com/apiad/pydock/main/install/linux.sh | sudo bash
 ```
 
 If you only want to use `pydock` inside a specific project, then you can just download the [pydock.py](https://raw.githubusercontent.com/apiad/pydock/main/src/pydock.py) file into your codebase and commit it to your repository.
