@@ -128,16 +128,18 @@ If you run `build` manually, `pydock` will not delete the old image for that con
 - Change `dockerfile` template such that `user` and `repository` are args, inserted during `build` instead of when generating the file.
 - Automatically delete untagged images when installing new dependencies.
 - Add commands to remove and update dependencies.
-- Improve install script to make it robust to different paths for the `python` command.
+
+### v0.0.3
+
+- Improved install script to make it robust to different paths for the `python` command.
 
 ### v0.0.2
 
-- Add a command to install dependencies inside the environment and commit/rebuild the image.
+- Added a command to install dependencies inside the environment and commit/rebuild the image.
 
 ### v0.0.1
 
-- Basic layout
-- Commands to create, list, and run a shell inside of environments.
+- Added commands to create, list, and run a shell inside of environments.
 
 ## License and Contribution
 
