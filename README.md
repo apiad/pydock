@@ -142,3 +142,11 @@ If you run `build` manually, `pydock` will not delete the old image for that con
 ## License and Contribution
 
 Code is MIT, and all contributions are appreciated 👋!
+
+To use `pydock` in development mode, after you fork and clone, run:
+
+```bash
+sudo make dev
+```
+
+This will create a soft link in `/usr/bin/pydock` to your working `src/pydock.py` file, so that when you type `pydock` you'll be using your development version.
