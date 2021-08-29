@@ -131,6 +131,10 @@ If you run `build` manually, `pydock` will not delete the old image for that con
 - Add a `docker-compose.yml` file to environments to handle port bindings, volumes, etc.
 - Change `dockerfile` template such that `user` and `repository` are args, inserted during `build` instead of when generating the file.
 
+### v0.0.5
+
+- Add `/home/user/.local/bin` to `$PATH` so that installed scripts work.
+
 ### v0.0.4
 
 - Automatically deletes untagged images when managing dependencies.

@@ -34,7 +34,7 @@ from pathlib import Path
 from typing import Callable
 
 
-__version__ = "0.0.4"
+__version__ = "0.0.5"
 
 
 args = sys.argv[1:]
@@ -52,14 +52,11 @@ elif args and args[0] == "--global":
     args.pop(0)
 
 pydock_path = pydock_path.resolve()
-
-envs_path = pydock_path / "envs"
 config_file = pydock_path / "pydock.conf"
 
 
 def init():
     pydock_path.mkdir(exist_ok=True)
-    envs_path.mkdir(exist_ok=True)
     config = ConfigParser()
     config.add_section('docker')
     config.set("docker", "repository", "")
@@ -113,7 +110,7 @@ def envs(config: ConfigParser):
     docker_images_result = docker(["images"], config, stdout=subprocess.PIPE)
     docker_images = [line.split() for line in docker_images_result.stdout.decode('utf8').split("\n")[1:]]
     docker_images = { line[0]: line[1:] for line in docker_images if line }
-    env_names = list(envs_path.iterdir())
+    env_names = [path for path in pydock_path.iterdir() if path.is_dir()]
 
     print(f"ENVIRONMENT     VERSION     IMAGE HASH    UPDATED         SIZE")
 
@@ -146,10 +143,13 @@ RUN apt update && apt install sudo
 
 RUN adduser --gecos '' --disabled-password {user} && echo "{user} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/nopasswd
 
-COPY requirements.txt /src/requirements.txt
+WORKDIR /home/{user}/
 USER {user}
-RUN pip install -r /src/requirements.txt
 
+RUN echo 'export PATH=/home/{user}/.local/bin:$PATH' >> ~/.bashrc
+
+COPY requirements.txt /src/requirements.txt
+RUN pip install -r /src/requirements.txt
 """
 
 
@@ -160,7 +160,7 @@ def create(config: ConfigParser, name:str, version:str):
 <name>      A suitable name for the environment (e.g., a project name)
 <version>   A Python version (e.g., 3.8 or 3.8.7)
     """
-    env_dir = envs_path / name
+    env_dir = pydock_path / name
 
     try:
         env_dir.mkdir()
@@ -190,7 +190,7 @@ NOTE: This is usually not necessary, unless you want to manually
 rebuild the image associated with an environment.
 The call to `create` automatically calls `build`.
     """
-    env_dir = envs_path / name
+    env_dir = pydock_path / name
     dockerfile = env_dir / f"dockerfile"
 
     if not env_dir.exists():
@@ -214,7 +214,7 @@ def delete(config: ConfigParser, name:str):
 
 <name>      The name of the environment
     """
-    env_dir = envs_path / name
+    env_dir = pydock_path / name
 
     if not env_dir.exists():
         print(f"🔴 Environment '{name}' doesn't exist!")
@@ -236,7 +236,7 @@ def shell(config: ConfigParser, name:str):
 
 The current working directory is mounted inside the environment.
     """
-    env_dir = envs_path / name
+    env_dir = pydock_path / name
 
     if not env_dir.exists():
         print(f"🔴 Environment '{name}' doesn't exist!")
@@ -262,7 +262,7 @@ def install(config: ConfigParser, env:str, package:str):
 After installation, the image for the environment will be updated,
 and the installed packages will be commited to the requirements, using `pip freeze`.
     """
-    env_dir = envs_path / env
+    env_dir = pydock_path / env
     requirements = env_dir / "requirements.txt"
     username = config.get("environment", "username")
 
@@ -301,7 +301,7 @@ def update(config: ConfigParser, env:str, package:str):
 After installation, the image for the environment will be updated,
 and the installed packages will be commited to the requirements, using `pip freeze`.
     """
-    env_dir = envs_path / env
+    env_dir = pydock_path / env
     requirements = env_dir / "requirements.txt"
     username = config.get("environment", "username")
 
@@ -340,7 +340,7 @@ def uninstall(config: ConfigParser, env:str, package:str):
 After installation, the image for the environment will be updated,
 and the installed packages will be commited to the requirements, using `pip freeze`.
     """
-    env_dir = envs_path / env
+    env_dir = pydock_path / env
     requirements = env_dir / "requirements.txt"
     username = config.get("environment", "username")
 
