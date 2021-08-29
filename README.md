@@ -77,7 +77,7 @@ pydock create datascience 3.8
 
 This command will do the following:
 
-* Create a new folder `datascience` inside `.pydock/envs` (wherever that folder is depends on the *local* vs *global* mode).
+* Create a new folder `datascience` inside `.pydock` (wherever that folder is depends on the *local* vs *global* mode).
 * Create a `dockerfile` and `requirements.txt` files inside that folder.
 * Run `docker build` in that context, effectively creating a new image with your desired Python version.
 
