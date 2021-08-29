@@ -177,7 +177,8 @@ def create(config: ConfigParser, name:str, version:str):
     with requirements.open("w") as fp:
         pass
 
-    build(config, name)
+    if not build(config, name):
+        delete(config, name)
 
 
 @command
@@ -201,11 +202,11 @@ The call to `create` automatically calls `build`.
 
     try:
         docker(["build", "-t", f"pydock-{name}:latest", "-f", str(dockerfile), str(env_dir)], config)
-        print(f"🟢 Environment '{name}' created successfully!")
+        print(f"🟢 Environment '{name}' built successfully!")
+        return True
     except:
-        print(f"🔴 Environment '{name}' failed!")
-        delete(config, name)
-
+        print(f"🔴 Building environment '{name}' failed!")
+        return False
 
 
 @command
