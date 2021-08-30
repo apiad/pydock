@@ -130,7 +130,7 @@ If you run `build` manually, `pydock` will not delete the old image for that con
 
 - Add a `docker-compose.yml` file to environments to handle port bindings, volumes, etc.
 - Change `dockerfile` template such that `user` and `repository` are args, inserted during `build` instead of when generating the file.
-- Generate unique environment image names for envs that have the same name but are located in different local folders
+- Generate unique environment image names for envs that have the same name but are located in different local folders.
 
 ### v0.0.5
 
