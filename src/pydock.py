@@ -36,6 +36,25 @@ from typing import Callable
 
 __version__ = "0.0.5"
 
+# Templates
+
+DOCKER_TEMPLATE = """
+FROM {prefix}{base}:{version}
+
+RUN apt update && apt install sudo
+
+RUN adduser --gecos '' --disabled-password {user} && echo "{user} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/nopasswd
+
+WORKDIR /home/{user}/
+USER {user}
+
+RUN echo 'export PATH=/home/{user}/.local/bin:$PATH' >> ~/.bashrc
+
+COPY requirements.txt /src/requirements.txt
+RUN pip install -r /src/requirements.txt
+"""
+
+# Determining the current working directory
 
 args = sys.argv[1:]
 
@@ -53,13 +72,15 @@ elif args and args[0] == "--global":
 
 pydock_path = pydock_path.resolve()
 config_file = pydock_path / "pydock.conf"
+docker_template = pydock_path / "template.dockerfile"
 
 
 def init():
     pydock_path.mkdir(exist_ok=True)
     config = ConfigParser()
     config.add_section("docker")
-    config.set("docker", "repository", "")
+    config.set("docker", "prefix", "")
+    config.set("docker", "base", "python")
     config.set("docker", "sudo", "False")
     config.add_section("environment")
     config.set("environment", "username", getpass.getuser())
@@ -68,6 +89,13 @@ def init():
 
     with config_file.open("w") as fp:
         config.write(fp)
+
+    if not docker_template.exists():
+        with docker_template.open("w") as fp:
+            fp.write(DOCKER_TEMPLATE)
+
+    with docker_template.open() as fp:
+        config.docker_template = fp.read()
 
     return config
 
@@ -137,23 +165,6 @@ def config(config: ConfigParser):
         print("")
 
 
-DOCKER_TEMPLATE = """
-FROM {repository}python:{version}
-
-RUN apt update && apt install sudo
-
-RUN adduser --gecos '' --disabled-password {user} && echo "{user} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/nopasswd
-
-WORKDIR /home/{user}/
-USER {user}
-
-RUN echo 'export PATH=/home/{user}/.local/bin:$PATH' >> ~/.bashrc
-
-COPY requirements.txt /src/requirements.txt
-RUN pip install -r /src/requirements.txt
-"""
-
-
 @command
 def create(config: ConfigParser, name: str, version: str):
     """Create a new environment
@@ -174,8 +185,9 @@ def create(config: ConfigParser, name: str, version: str):
 
     with dockerfile.open("w") as fp:
         fp.write(
-            DOCKER_TEMPLATE.format(
-                repository=config.get("docker", "repository"),
+            config.docker_template.format(
+                prefix=config.get("docker", "prefix"),
+                base=config.get("docker", "base"),
                 version=version,
                 user=config.get("environment", "username"),
             ).strip()
