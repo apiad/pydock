@@ -32,9 +32,10 @@ from configparser import ConfigParser
 import subprocess
 from pathlib import Path
 from typing import Callable
+import textwrap
 
 
-__version__ = "0.0.5"
+__version__ = "0.0.6"
 
 # Templates
 
@@ -51,8 +52,8 @@ USER {user}
 RUN echo 'export PATH=/home/{user}/.local/bin:$PATH' >> ~/.bashrc
 
 COPY requirements.txt /src/requirements.txt
-RUN pip install -r /src/requirements.txt
-"""
+RUN pip --disable-pip-version-check install -r /src/requirements.txt
+""".strip()
 
 # Determining the current working directory
 
@@ -82,8 +83,7 @@ def init():
     config.set("docker", "prefix", "")
     config.set("docker", "base", "python")
     config.set("docker", "sudo", "False")
-    config.add_section("environment")
-    config.set("environment", "username", getpass.getuser())
+    config.set("docker", "user", getpass.getuser())
 
     config.read(config_file)
 
@@ -107,20 +107,23 @@ class Command:
     def __init__(self, func: Callable) -> None:
         self.func = func
         self.name = func.__name__
-        self.doc = func.__doc__.strip()
+        self.doc = textwrap.dedent(func.__doc__).strip()
         self.doc_short = self.doc.split("\n")[0]
         self.signature = inspect.signature(self.func)
         self.args = list(self.signature.parameters.keys())[1:]
         self.args_help = " ".join(f"<{arg}>" for arg in self.args)
 
     def __call__(self, config, *args):
-        if len(args) != len(self.args):
+        try:
+            binding = self.signature.bind(config, *args)
+        except TypeError:
             print(f"✨ Usage: pydock {self.name} {self.args_help}")
             print("")
             print(self.doc)
             return
 
-        return self.func(config, *args)
+        return self.func(*binding.args)
+
 
     def __str__(self):
         return f"{self.name:16}{self.doc_short.strip()}"
@@ -133,8 +136,10 @@ def command(func):
 
 @command
 def envs(config: ConfigParser):
-    """List all existing environments"""
-    docker_images_result = docker(["images"], config, stdout=subprocess.PIPE)
+    """
+    List all existing environments
+    """
+    docker_images_result = docker("images", config=config, stdout=subprocess.PIPE)
     docker_images = [
         line.split()
         for line in docker_images_result.stdout.decode("utf8").split("\n")[1:]
@@ -153,7 +158,9 @@ def envs(config: ConfigParser):
 
 @command
 def config(config: ConfigParser):
-    """Prints current configuration"""
+    """
+    Prints current configuration
+    """
     print(f"Running from folder: {str(pydock_path)}\n")
 
     for section in config.sections():
@@ -167,7 +174,8 @@ def config(config: ConfigParser):
 
 @command
 def create(config: ConfigParser, name: str, version: str):
-    """Create a new environment
+    """
+    Create a new environment
 
     <name>      A suitable name for the environment (e.g., a project name)
     <version>   A Python version (e.g., 3.8 or 3.8.7)
@@ -189,7 +197,7 @@ def create(config: ConfigParser, name: str, version: str):
                 prefix=config.get("docker", "prefix"),
                 base=config.get("docker", "base"),
                 version=version,
-                user=config.get("environment", "username"),
+                user=config.get("docker", "user"),
             ).strip()
         )
 
@@ -202,7 +210,8 @@ def create(config: ConfigParser, name: str, version: str):
 
 @command
 def build(config: ConfigParser, name: str):
-    """(re)Builds an environment Docker image
+    """
+    (re)Builds an environment Docker image
 
     <name>      The name of the environment (must already exist)
 
@@ -221,15 +230,13 @@ def build(config: ConfigParser, name: str):
 
     try:
         docker(
-            [
-                "build",
-                "-t",
-                f"pydock-{name}:latest",
-                "-f",
-                str(dockerfile),
-                str(env_dir),
-            ],
-            config,
+            "build",
+            "-t",
+            f"pydock-{name}:latest",
+            "-f",
+            str(dockerfile),
+            str(env_dir),
+            config=config,
         )
         print(f"🟢 Environment '{name}' built successfully!")
         return True
@@ -240,7 +247,8 @@ def build(config: ConfigParser, name: str):
 
 @command
 def delete(config: ConfigParser, name: str):
-    """Deletes an environment
+    """
+    Deletes an environment
 
     <name>      The name of the environment
     """
@@ -253,16 +261,18 @@ def delete(config: ConfigParser, name: str):
     shutil.rmtree(env_dir)
 
     # TODO: Decide whether to delete the Docker image makes sense
-    docker(["rmi", "--force", f"pydock-{name}:latest"], config, throw=False)
+    docker("rmi", "--force", f"pydock-{name}:latest", config=config, throw=False)
 
     print(f"💣 Environment '{name}' succesfully deleted.")
 
 
 @command
-def shell(config: ConfigParser, name: str):
-    """Open a shell inside an environment
+def run(config: ConfigParser, name: str, *command):
+    """
+    Open a shell inside an environment and run a command
 
-    <name>      The name of the environment
+    <name>        The name of the environment
+    [command...]  Optional command to run (defaults to 'bash')
 
     The current working directory is mounted inside the environment.
     """
@@ -274,26 +284,30 @@ def shell(config: ConfigParser, name: str):
 
     print(f"🚀 Creating shell for '{name}'")
 
-    username = config.get("environment", "username")
+    user = config.get("docker", "user")
     cwd = Path.cwd().resolve()
 
+    command = list(command)
+
+    if not command:
+        command = ["bash"]
+
     docker(
-        [
-            "run",
-            "--rm",
-            "-it",
-            "--user",
-            str(os.geteuid()),
-            "--hostname",
-            name,
-            "-v",
-            f"{cwd}:/home/{username}/{cwd.stem}",
-            "-w",
-            f"/home/{username}/{cwd.stem}",
-            f"pydock-{name}:latest",
-            "bash",
-        ],
-        config,
+        "run",
+        "--rm",
+        "-it",
+        "--user",
+        str(os.geteuid()),
+        "--hostname",
+        name,
+        "-v",
+        f"{cwd}:/home/{user}/{cwd.stem}",
+        "-w",
+        f"/home/{user}/{cwd.stem}",
+        f"pydock-{name}:latest",
+        *command,
+        config=config,
+        throw=False,
     )
 
     print(f"🏁 Shell instance for '{name}' ended.")
@@ -301,7 +315,8 @@ def shell(config: ConfigParser, name: str):
 
 @command
 def install(config: ConfigParser, env: str, package: str):
-    """Install a package in an environment and update requirements
+    """
+    Install a package in an environment and update requirements
 
     <env>       The environment where to install.
     <package>   A package name in pip format (e.g., can have a pinned version)
@@ -311,7 +326,7 @@ def install(config: ConfigParser, env: str, package: str):
     """
     env_dir = pydock_path / env
     requirements = env_dir / "requirements.txt"
-    username = config.get("environment", "username")
+    user = config.get("docker", "user")
 
     if not env_dir.exists():
         print(f"🔴 Environment '{env}' doesn't exist!")
@@ -322,44 +337,42 @@ def install(config: ConfigParser, env: str, package: str):
     try:
         # Run pip install and freeze requirements
         docker(
-            [
-                "run",
-                "--name",
-                f"pydock-{env}-tmp",
-                "-v",
-                f"{requirements.resolve()}:/home/{username}/requirements.txt",
-                "--user",
-                str(os.geteuid()),
-                f"pydock-{env}",
-                "bash",
-                "-c",
-                f"pip install {package} && pip freeze > ~/requirements.txt",
-            ],
-            config,
+            "run",
+            "--name",
+            f"pydock-{env}-tmp",
+            "-v",
+            f"{requirements.resolve()}:/home/{user}/requirements.txt",
+            "--user",
+            str(os.geteuid()),
+            f"pydock-{env}",
+            "bash",
+            "-c",
+            f"pip install {package} && pip freeze > ~/requirements.txt",
+            config=config,
         )
 
         print(f"🎁 Updating image for environment '{env}'")
 
         # Commit the container and update the image in-place
         new_image_id = (
-            docker(["commit", f"pydock-{env}-tmp"], config, stdout=subprocess.PIPE)
+            docker("commit", f"pydock-{env}-tmp", config=config, stdout=subprocess.PIPE)
             .stdout.decode("utf8")
             .strip()
             .split(":")[1]
         )
         # Delete the old image
         docker(
-            ["rmi", "--force", f"pydock-{env}:latest"], config, stdout=subprocess.PIPE
+            "rmi", "--force", f"pydock-{env}:latest", config=config, stdout=subprocess.PIPE
         )
         # Tag the new image
-        docker(["tag", new_image_id, f"pydock-{env}:latest"], config)
+        docker("tag", new_image_id, f"pydock-{env}:latest", config=config)
     except:
         print(f"🔴 Install command failed!")
     finally:
         # Remove the dangling container
         docker(
-            ["rm", "--force", f"pydock-{env}-tmp"],
-            config,
+            "rm", "--force", f"pydock-{env}-tmp",
+            config=config,
             throw=False,
             stdout=subprocess.PIPE,
         )
@@ -367,7 +380,8 @@ def install(config: ConfigParser, env: str, package: str):
 
 @command
 def update(config: ConfigParser, env: str, package: str):
-    """Update a package in an environment and update requirements
+    """
+    Update a package in an environment and update requirements
 
     <env>       The environment where to update.
     <package>   A package name to update
@@ -377,7 +391,7 @@ def update(config: ConfigParser, env: str, package: str):
     """
     env_dir = pydock_path / env
     requirements = env_dir / "requirements.txt"
-    username = config.get("environment", "username")
+    user = config.get("docker", "user")
 
     if not env_dir.exists():
         print(f"🔴 Environment '{env}' doesn't exist!")
@@ -388,44 +402,42 @@ def update(config: ConfigParser, env: str, package: str):
     # Run pip install and freeze requirements
     try:
         docker(
-            [
-                "run",
-                "--name",
-                f"pydock-{env}-tmp",
-                "-v",
-                f"{requirements.resolve()}:/home/{username}/requirements.txt",
-                "--user",
-                str(os.geteuid()),
-                f"pydock-{env}",
-                "bash",
-                "-c",
-                f"pip install -U {package} && pip freeze > ~/requirements.txt",
-            ],
-            config,
+            "run",
+            "--name",
+            f"pydock-{env}-tmp",
+            "-v",
+            f"{requirements.resolve()}:/home/{user}/requirements.txt",
+            "--user",
+            str(os.geteuid()),
+            f"pydock-{env}",
+            "bash",
+            "-c",
+            f"pip install -U {package} && pip freeze > ~/requirements.txt",
+            config=config,
         )
 
         print(f"🎁 Updating image for environment '{env}'")
 
         # Commit the container and update the image in-place
         new_image_id = (
-            docker(["commit", f"pydock-{env}-tmp"], config, stdout=subprocess.PIPE)
+            docker("commit", f"pydock-{env}-tmp", config=config, stdout=subprocess.PIPE)
             .stdout.decode("utf8")
             .strip()
             .split(":")[1]
         )
         # Delete the old image
         docker(
-            ["rmi", "--force", f"pydock-{env}:latest"], config, stdout=subprocess.PIPE
+            "rmi", "--force", f"pydock-{env}:latest", config=config, stdout=subprocess.PIPE
         )
         # Tag the new image
-        docker(["tag", new_image_id, f"pydock-{env}:latest"], config)
+        docker("tag", new_image_id, f"pydock-{env}:latest", config=config)
     except:
         print(f"🔴 Update command failed!")
     finally:
         # Remove the dangling container
         docker(
-            ["rm", "--force", f"pydock-{env}-tmp"],
-            config,
+            "rm", "--force", f"pydock-{env}-tmp",
+            config=config,
             throw=False,
             stdout=subprocess.PIPE,
         )
@@ -433,7 +445,8 @@ def update(config: ConfigParser, env: str, package: str):
 
 @command
 def uninstall(config: ConfigParser, env: str, package: str):
-    """Uninstall a package in an environment and update requirements
+    """
+    Uninstall a package in an environment and update requirements
 
     <env>       The environment where to update.
     <package>   A package name to uninstall
@@ -443,7 +456,7 @@ def uninstall(config: ConfigParser, env: str, package: str):
     """
     env_dir = pydock_path / env
     requirements = env_dir / "requirements.txt"
-    username = config.get("environment", "username")
+    user = config.get("docker", "user")
 
     if not env_dir.exists():
         print(f"🔴 Environment '{env}' doesn't exist!")
@@ -454,50 +467,49 @@ def uninstall(config: ConfigParser, env: str, package: str):
     try:
         # Run pip install and freeze requirements
         docker(
-            [
-                "run",
-                "--name",
-                f"pydock-{env}-tmp",
-                "-v",
-                f"{requirements.resolve()}:/home/{username}/requirements.txt",
-                "--user",
-                str(os.geteuid()),
-                f"pydock-{env}",
-                "bash",
-                "-c",
-                f"pip uninstall -y {package} && pip freeze > ~/requirements.txt",
-            ],
-            config,
+            "run",
+            "--name",
+            f"pydock-{env}-tmp",
+            "-v",
+            f"{requirements.resolve()}:/home/{user}/requirements.txt",
+            "--user",
+            str(os.geteuid()),
+            f"pydock-{env}",
+            "bash",
+            "-c",
+            f"pip uninstall -y {package} && pip freeze > ~/requirements.txt",
+            config=config,
         )
 
         print(f"🎁 Updating image for environment '{env}'")
 
         # Commit the container and update the image in-place
         new_image_id = (
-            docker(["commit", f"pydock-{env}-tmp"], config, stdout=subprocess.PIPE)
+            docker("commit", f"pydock-{env}-tmp", config=config, stdout=subprocess.PIPE)
             .stdout.decode("utf8")
             .strip()
             .split(":")[1]
         )
         # Delete the old image
         docker(
-            ["rmi", "--force", f"pydock-{env}:latest"], config, stdout=subprocess.PIPE
+            "rmi", "--force", f"pydock-{env}:latest", config=config, stdout=subprocess.PIPE
         )
         # Tag the new image
-        docker(["tag", new_image_id, f"pydock-{env}:latest"], config)
+        docker("tag", new_image_id, f"pydock-{env}:latest", config=config)
     except:
         print(f"🔴 Delete command failed!")
     finally:
         # Remove the dangling container
         docker(
-            ["rm", "--force", f"pydock-{env}-tmp"],
-            config,
+            "rm", "--force", f"pydock-{env}-tmp",
+            config=config,
             throw=False,
             stdout=subprocess.PIPE,
         )
 
 
-def docker(command, config, throw=True, **kwargs):
+def docker(*command, config, throw=True, **kwargs):
+    command = list(command)
     command.insert(0, "docker")
 
     if config.getboolean("docker", "sudo"):

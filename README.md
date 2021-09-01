@@ -89,12 +89,15 @@ After creating an environment, if you run `docker images` you'll see a `pydock-<
 You can easily start it with (continuing with the previous example):
 
 ```bash
-pydock shell datascience
+pydock run datascience
 ```
 
 This will execute a `docker run ... datascience bash` command tailored to that environment with some additional tidbits.
 One is that your current working directory will be mounted inside the newly created container's `/home/<user>`, which will be the starting working directory.
 Thus, inside the container, whatever you do will be reflected back in your host filesystem, hopefully with the right permissions.
+
+You can also type `pydock run <environment> [command...]` to run a specific command and shutdown after it's finished.
+Commands are run with `-it`, so you can fire up a Python interpreter, Flask application, etc.
 
 ### Managing dependencies in an environment
 
@@ -129,8 +132,12 @@ If you run `build` manually, `pydock` will not delete the old image for that con
 ### Planned
 
 - Add a `docker-compose.yml` file to environments to handle port bindings, volumes, etc.
-- Change `dockerfile` template such that `user` and `repository` are args, inserted during `build` instead of when generating the file.
 - Generate unique environment image names for envs that have the same name but are located in different local folders.
+
+### v0.0.6
+
+- Changed `shell` to `run` and added the option to run a specific command.
+- Added a explicit `template.dockerfile` in the `.pydock` folder you can use to customize the image generation.
 
 ### v0.0.5
 
