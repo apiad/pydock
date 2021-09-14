@@ -279,10 +279,10 @@ def run(config: ConfigParser, name: str, *command):
     env_dir = pydock_path / name
 
     if not env_dir.exists():
-        print(f"🔴 Environment '{name}' doesn't exist!")
+        print(f"🔴 Environment '{name}' doesn't exist!", file=sys.stderr)
         return
 
-    print(f"🚀 Creating shell for '{name}'")
+    print(f"🚀 Creating shell for '{name}'", file=sys.stderr)
 
     user = config.get("docker", "user")
     cwd = Path.cwd().resolve()
@@ -310,7 +310,7 @@ def run(config: ConfigParser, name: str, *command):
         throw=False,
     )
 
-    print(f"🏁 Shell instance for '{name}' ended.")
+    print(f"🏁 Shell instance for '{name}' ended.", file=sys.stderr)
 
 
 @command
@@ -329,10 +329,10 @@ def install(config: ConfigParser, env: str, package: str):
     user = config.get("docker", "user")
 
     if not env_dir.exists():
-        print(f"🔴 Environment '{env}' doesn't exist!")
+        print(f"🔴 Environment '{env}' doesn't exist!", file=sys.stderr)
         return
 
-    print(f"💾 Installing {package} in environment '{env}'")
+    print(f"💾 Installing {package} in environment '{env}'", file=sys.stderr)
 
     try:
         # Run pip install and freeze requirements
@@ -351,7 +351,7 @@ def install(config: ConfigParser, env: str, package: str):
             config=config,
         )
 
-        print(f"🎁 Updating image for environment '{env}'")
+        print(f"🎁 Updating image for environment '{env}'", file=sys.stderr)
 
         # Commit the container and update the image in-place
         new_image_id = (
@@ -367,7 +367,7 @@ def install(config: ConfigParser, env: str, package: str):
         # Tag the new image
         docker("tag", new_image_id, f"pydock-{env}:latest", config=config)
     except:
-        print(f"🔴 Install command failed!")
+        print(f"🔴 Install command failed!", file=sys.stderr)
     finally:
         # Remove the dangling container
         docker(
@@ -394,10 +394,10 @@ def update(config: ConfigParser, env: str, package: str):
     user = config.get("docker", "user")
 
     if not env_dir.exists():
-        print(f"🔴 Environment '{env}' doesn't exist!")
+        print(f"🔴 Environment '{env}' doesn't exist!", file=sys.stderr)
         return
 
-    print(f"💾 Updating {package} in environment '{env}'")
+    print(f"💾 Updating {package} in environment '{env}'", file=sys.stderr)
 
     # Run pip install and freeze requirements
     try:
@@ -416,7 +416,7 @@ def update(config: ConfigParser, env: str, package: str):
             config=config,
         )
 
-        print(f"🎁 Updating image for environment '{env}'")
+        print(f"🎁 Updating image for environment '{env}'", file=sys.stderr)
 
         # Commit the container and update the image in-place
         new_image_id = (
@@ -432,7 +432,7 @@ def update(config: ConfigParser, env: str, package: str):
         # Tag the new image
         docker("tag", new_image_id, f"pydock-{env}:latest", config=config)
     except:
-        print(f"🔴 Update command failed!")
+        print(f"🔴 Update command failed!", file=sys.stderr)
     finally:
         # Remove the dangling container
         docker(
@@ -459,10 +459,10 @@ def uninstall(config: ConfigParser, env: str, package: str):
     user = config.get("docker", "user")
 
     if not env_dir.exists():
-        print(f"🔴 Environment '{env}' doesn't exist!")
+        print(f"🔴 Environment '{env}' doesn't exist!", file=sys.stderr)
         return
 
-    print(f"💾 Uninstalling {package} in environment '{env}'")
+    print(f"💾 Uninstalling {package} in environment '{env}'", file=sys.stderr)
 
     try:
         # Run pip install and freeze requirements
@@ -481,7 +481,7 @@ def uninstall(config: ConfigParser, env: str, package: str):
             config=config,
         )
 
-        print(f"🎁 Updating image for environment '{env}'")
+        print(f"🎁 Updating image for environment '{env}'", file=sys.stderr)
 
         # Commit the container and update the image in-place
         new_image_id = (
@@ -497,7 +497,7 @@ def uninstall(config: ConfigParser, env: str, package: str):
         # Tag the new image
         docker("tag", new_image_id, f"pydock-{env}:latest", config=config)
     except:
-        print(f"🔴 Delete command failed!")
+        print(f"🔴 Delete command failed!", file=sys.stderr)
     finally:
         # Remove the dangling container
         docker(
