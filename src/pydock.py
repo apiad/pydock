@@ -292,10 +292,15 @@ def run(config: ConfigParser, name: str, *command):
     if not command:
         command = ["bash"]
 
+    if sys.stdin.isatty():
+        terminal = "-it"
+    else:
+        terminal = ""
+
     docker(
         "run",
         "--rm",
-        "-it",
+        terminal,
         "--user",
         str(os.geteuid()),
         "--hostname",
