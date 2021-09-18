@@ -134,6 +134,10 @@ If you run `build` manually, `pydock` will not delete the old image for that con
 - Add a `docker-compose.yml` file to environments to handle port bindings, volumes, etc.
 - Generate unique environment image names for envs that have the same name but are located in different local folders.
 
+### dev
+
+- Fix error on `run` when not in a TTY (e.g., when using `cron`)
+
 ### v0.0.6
 
 - Changed `shell` to `run` and added the option to run a specific command.
