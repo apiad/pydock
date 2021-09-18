@@ -292,15 +292,8 @@ def run(config: ConfigParser, name: str, *command):
     if not command:
         command = ["bash"]
 
-    if sys.stdin.isatty():
-        terminal = "-it"
-    else:
-        terminal = ""
-
-    docker(
-        "run",
+    docker_cmd = ["run",
         "--rm",
-        terminal,
         "--user",
         str(os.geteuid()),
         "--hostname",
@@ -310,7 +303,13 @@ def run(config: ConfigParser, name: str, *command):
         "-w",
         f"/home/{user}/{cwd.stem}",
         f"pydock-{name}:latest",
-        *command,
+    ] + command
+
+    if sys.stdin.isatty():
+        docker_cmd.insert(2, "-it")
+
+    docker(
+        *docker_cmd,
         config=config,
         throw=False,
     )
